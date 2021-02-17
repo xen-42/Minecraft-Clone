@@ -1,13 +1,13 @@
 extends StaticBody
 
-const DIMENSION = Vector3(10,10,10)
+const DIMENSION = Vector3(16,50,16)
 
 var mat = preload("res://assets/TextureAtlasMaterial.tres")
 var rng = RandomNumberGenerator.new()
 # Make this load from a file
 const texture_atlas_size = Vector2(8, 4)
 
-var generator = load("res://chunk_generators/BaseGenerator.gd")
+var generator = load("res://chunk_generators/ForestGenerator.gd")
 
 const v = [
 	Vector3(0, 0, 0), #0
