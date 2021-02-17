@@ -17,7 +17,7 @@ var _last_chunk = Vector2()
 
 var _kill_thread = false
 
-const load_radius = 3
+const load_radius = 5
 var current_load_radius = 0
 
 func _ready():
@@ -30,7 +30,7 @@ func _ready():
 
 func _thread_gen(userdata):
 	# Center map generation on the player
-	while(true):
+	while(!kill_thread):
 		# Check if player in new chunk
 		var player_pos_updated = false
 
@@ -38,23 +38,15 @@ func _thread_gen(userdata):
 		# Make sure we aren't making a shallow copy
 		_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
 		var current_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
-		if kill_thread:
-			return
 		
 		if player_pos_updated:
-			# If new chunk unload unneeded chunks
-			for v in _loaded_chunks.keys():
-				if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
-					_chunks_to_unload.append(Vector2(v.x, v.y))
+			print("updated player pos")
+			print(current_load_radius)
+			# If new chunk unload unneeded chunks (changed to be entirely done off main thread if I understand correctly, fixling some stuttering I was feeling
+			enforce_render_distance(current_chunk_pos)
 			# Make sure player chunk is loaded
 			_last_chunk = _load_chunk(current_chunk_pos.x, current_chunk_pos.y)
 			current_load_radius = 1
-		
-		# Unload old chunks
-		if _chunks_to_unload.size() > 0:
-			var v = _chunks_to_unload[0]
-			_unload_chunk(v.x, v.y)
-			_chunks_to_unload.erase(v)
 		else:
 			# Load next chunk based on the position of the last one
 			var delta_pos = _last_chunk - current_chunk_pos
@@ -114,14 +106,32 @@ func _update_chunk(cx, cz):
 		var c = _loaded_chunks[c_pos]
 		c.update()
 	return c_pos
+	
+# Detects and removes chunks all in one go without consulting the main thread.
+func enforce_render_distance(current_chunk_pos):
+	var chunks_removed = 0
+	# Stops it right here if there are not enough chunks to run
+	if(current_load_radius != load_radius):
+		return
+	else:
+		#Checks and deletes the offending chunks all in one go 
+		for v in _loaded_chunks.keys():
+			# Anywhere you directly interface with chunks outside of unloading
+			if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
+				_loaded_chunks[v].free()
+				_loaded_chunks.erase(v)
+				chunks_removed+=1
+	print(chunks_removed)
+
 
 func _unload_chunk(cx, cz):
 	var c_pos = Vector2(cx, cz)
 	if _loaded_chunks.has(c_pos):
-		_loaded_chunks[c_pos].call_deferred("queue_free")
+		_loaded_chunks[c_pos].free()
 		_loaded_chunks.erase(c_pos)
+		# Leaving this here because it is funny as hell
 		# Force it to just fucking chill after holy shit
-		OS.delay_msec(50)
+		# OS.delay_msec(50)
 
 func kill_thread():
 	kill_thread = true
