@@ -23,6 +23,7 @@ var paused = false
 signal place_block(pos, norm, type)
 signal destroy_block(pos, norm)
 signal highlight_block(pos, norm)
+signal unhighlight_block()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -57,6 +58,8 @@ func _physics_process(delta):
 				emit_signal("destroy_block", pos, norm)
 			elif Input.is_action_just_pressed("right_click"):
 				emit_signal("place_block", pos, norm, selected_block)
+		else:
+			emit_signal("unhighlight_block")
 		
 		# Scroll to change block
 		if Input.is_action_just_released("scroll_up"):
