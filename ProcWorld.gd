@@ -95,7 +95,9 @@ func _load_chunk(cx, cz):
 		c.generate(self, cx, cz)
 		c.update()
 		add_child(c)
+		chunk_mutex.lock()
 		_loaded_chunks[c_pos] = c
+		chunk_mutex.unlock()
 	return c_pos
 
 func _update_chunk(cx, cz):
