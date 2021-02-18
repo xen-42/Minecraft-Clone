@@ -15,7 +15,6 @@ var chunk_mutex = Mutex.new()
 var _new_chunk_pos = Vector2()
 var _chunk_pos = null
 var _loaded_chunks = {}
-var _chunks_to_unload = []
 var _last_chunk = Vector2()
 
 var _kill_thread = false
@@ -29,16 +28,17 @@ func _ready():
 
 
 func _thread_gen(userdata):
+	var i = 0
 	# Center map generation on the player
 	while(!bKill_thread):
 		# Check if player in new chunk
 		var player_pos_updated = false
-
 		player_pos_updated = _new_chunk_pos != _chunk_pos
+		
 		# Make sure we aren't making a shallow copy
 		_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
 		var current_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
-		
+		i = i + 1
 		if player_pos_updated:
 			# If new chunk unload unneeded chunks (changed to be entirely done off main thread if I understand correctly, fixling some stuttering I was feeling
 			enforce_render_distance(current_chunk_pos)
@@ -95,9 +95,7 @@ func _load_chunk(cx, cz):
 		c.generate(self, cx, cz)
 		c.update()
 		add_child(c)
-		chunk_mutex.lock()
 		_loaded_chunks[c_pos] = c
-		chunk_mutex.unlock()
 	return c_pos
 
 func _update_chunk(cx, cz):
@@ -109,21 +107,14 @@ func _update_chunk(cx, cz):
 	
 # Detects and removes chunks all in one go without consulting the main thread.
 func enforce_render_distance(current_chunk_pos):
-	var chunks_removed = 0
-	# Stops it right here if there are not enough chunks to run
-	if(current_load_radius != load_radius):
-		return
-	else:
 		#Checks and deletes the offending chunks all in one go 
-		for v in _loaded_chunks.keys():
-			# Anywhere you directly interface with chunks outside of unloading
-			if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
-				chunk_mutex.lock()
-				_loaded_chunks[v].free()
-				_loaded_chunks.erase(v)
-				chunk_mutex.unlock()
-				chunks_removed+=1
-	print(chunks_removed)
+	for v in _loaded_chunks.keys():
+		# Anywhere you directly interface with chunks outside of unloading
+		if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
+			chunk_mutex.lock()
+			_loaded_chunks[v].free()
+			_loaded_chunks.erase(v)
+			chunk_mutex.unlock()
 
 
 func _unload_chunk(cx, cz):
