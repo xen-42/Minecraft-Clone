@@ -5,6 +5,9 @@ var pw
 onready var player = $Player
 onready var block_outline = $BlockOutline
 
+var chunk_x = 1
+var chunk_z = 1
+
 var Chunk = load("res://Chunk.gd")
 var ProcWorld = load("res://ProcWorld.gd")
 
