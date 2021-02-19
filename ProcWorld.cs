@@ -116,6 +116,7 @@ public class ProcWorld : Spatial
 
 	public void change_block(int cx, int cz, int bx, int by, int bz, string t)
 	{
+<<<<<<< HEAD
 		try
 		{
 			var c = _loaded_chunks[new Vector2(cx, cz)];
@@ -130,6 +131,15 @@ public class ProcWorld : Spatial
 		{
 
 		}
+=======
+		var c = _loaded_chunks[new Vector2(cx, cz)];
+		if(c._block_data[bx,by,bz].type != t)
+		{
+			GD.Print($"Changed block at {bx} {by} {bz} in chunk {cx}, {cz}");
+			c._block_data[bx, by, bz].create(t);
+			c.Update();
+		}
+>>>>>>> parent of 08986a2 (The various classes)
 	}
 
 	Vector2 _update_chunk(int cx, int cz)
