@@ -39,7 +39,7 @@ public class Chunk_cs : StaticBody
 		new Vector3(0, 1, 0), //2
 		new Vector3(1, 1, 0), //3
 		new Vector3(0, 0, 1), //4
-		new Vector3(1, 0, 1), //5
+		new Vector3(1, 0, 1), //5s
 		new Vector3(0, 1, 1), //6
 		new Vector3(1, 1, 1)  //7
 	};
@@ -77,6 +77,7 @@ public class Chunk_cs : StaticBody
 	public BlockData[,,] _block_data = new BlockData[(int)DIMENSION.x, (int)DIMENSION.y, (int)DIMENSION.z];
 
 	SurfaceTool st = new SurfaceTool();
+	SurfaceTool collisionmesh = new SurfaceTool();
 
 	public void Generate(ProcWorld w, float cx, float cz)
 	{
@@ -131,6 +132,7 @@ public class Chunk_cs : StaticBody
 		MeshInstance mesh_instance = new MeshInstance();
 
 		st.Begin(Mesh.PrimitiveType.Triangles);
+		collisionmesh.Begin(Mesh.PrimitiveType.Triangles);
 
 		//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
 		for (int x = 0; x < DIMENSION.x; x++)
@@ -139,12 +141,20 @@ public class Chunk_cs : StaticBody
 			{
 				for (int z = 0; z < DIMENSION.z; z++)
 				{
-					if(_block_data[x,y,z].type != "Air")
+					string blocktype = _block_data[x, y, z].type;
+					if (blocktype != "Air")
 					{
 						bool[] check = check_transparent_neighbours(x, y, z);
 						if(check.Contains(true))
 						{
-							_create_block(check, x, y, z);
+							if(BlockData.block_types[blocktype].TagsList.Contains(Tags.No_Collision))
+                            {
+								_create_block(check, x, y, z, true);
+							}
+							else
+                            {
+								_create_block(check, x, y, z, false);
+							}
 						}
 					}
 				}
@@ -153,6 +163,9 @@ public class Chunk_cs : StaticBody
 		st.GenerateNormals(false);
 		st.SetMaterial(mat);
 		st.Commit(mesh);
+		collisionmesh.Commit(new ArrayMesh());
+		collisionmesh.GenerateNormals(false);
+		collisionmesh.
 		mesh_instance.Mesh = mesh;
 		foreach(Node child in GetChildren())
 		{
@@ -162,7 +175,6 @@ public class Chunk_cs : StaticBody
 			}
 		}
 		AddChild(mesh_instance);
-		mesh_instance.CreateTrimeshCollision();
 	}
 
 	bool[] check_transparent_neighbours(int x, int y, int z)
@@ -170,54 +182,54 @@ public class Chunk_cs : StaticBody
 		return new bool[6] { is_block_transparent(x, y + 1, z), is_block_transparent(x, y - 1, z), is_block_transparent(x - 1, y, z), is_block_transparent(x + 1, y, z), is_block_transparent(x, y, z - 1), is_block_transparent(x, y, z + 1) };
 	}
 
-	public void _create_block(bool[] check, int x, int y, int z)
+	public void _create_block(bool[] check, int x, int y, int z, bool NoCollision)
 	{
 		var block = _block_data[x, y, z].type;
 		var block_types = BlockData.block_types; 
 		if( block_types[block].TagsList.Contains(Tags.Flat))
 		{
-			create_face(CROSS_1, x, y, z, block_types[block].Only);
-			create_face(CROSS_2, x, y, z, block_types[block].Only);
-			create_face(CROSS_3, x, y, z, block_types[block].Only);
-			create_face(CROSS_4, x, y, z, block_types[block].Only);
+			create_face(CROSS_1, x, y, z, block_types[block].Only, NoCollision);
+			create_face(CROSS_2, x, y, z, block_types[block].Only, NoCollision);
+			create_face(CROSS_3, x, y, z, block_types[block].Only, NoCollision);
+			create_face(CROSS_4, x, y, z, block_types[block].Only, NoCollision);
 
 		}
 		else
 		{
 			if(check[0])
 			{
-				create_face(TOP, x, y, z, block_types[block].Top);
+				create_face(TOP, x, y, z, block_types[block].Top,NoCollision);
 			}
 			if (check[1])
 			{
-				create_face(BOTTOM, x, y, z, block_types[block].Bottom);
+				create_face(BOTTOM, x, y, z, block_types[block].Bottom, NoCollision);
 
 			}
 			if (check[2])
 			{
-				create_face(LEFT, x, y, z, block_types[block].Left);
+				create_face(LEFT, x, y, z, block_types[block].Left, NoCollision);
 
 			}
 			if (check[3])
 			{
-				create_face(RIGHT, x, y, z, block_types[block].Right);
+				create_face(RIGHT, x, y, z, block_types[block].Right, NoCollision);
 
 			}
 			if (check[4])
 			{
-				create_face(BACK, x, y, z, block_types[block].Back);
+				create_face(BACK, x, y, z, block_types[block].Back, NoCollision);
 
 			}
 			if (check[5])
 			{
-				create_face(FRONT, x, y, z, block_types[block].Front);
+				create_face(FRONT, x, y, z, block_types[block].Front, NoCollision);
 			}
 
 		}
 
 	}
 
-	void create_face(int[] i, int x, int y, int z, Vector2 texture_atlas_offset)
+	void create_face(int[] i, int x, int y, int z, Vector2 texture_atlas_offset, bool NoCollision)
 	{
 		Vector3 offset = new Vector3(x, y, z);
 
@@ -239,6 +251,14 @@ public class Chunk_cs : StaticBody
 		// Add UVs and tris
 		st.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
 		st.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
+
+		if(!NoCollision)
+        {
+			collisionmesh.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
+			collisionmesh.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
+		}
+
+
 	}
 
 	bool is_block_transparent(int x, int y, int z)
