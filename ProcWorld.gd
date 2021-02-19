@@ -3,58 +3,48 @@ var height_noise = OpenSimplexNoise.new()
 
 onready var Chunk = load("res://Chunk.gd")
 
-# Thread variables
-var thread
-var mutex
-var semaphore
-var kill_thread = false
+# Thread variables No reason to declare these on startup just do it up here
+var thread = Thread.new()
+var mutex = Mutex.new()
+var semaphore = Semaphore.new()
+var bKill_thread = false
+
+#Use this when adding/removing from the chunk array/dict
+var chunk_mutex = Mutex.new()
 
 var _new_chunk_pos = Vector2()
 var _chunk_pos = null
 var _loaded_chunks = {}
-var _chunks_to_unload = []
 var _last_chunk = Vector2()
 
 var _kill_thread = false
 
-const load_radius = 3
+const load_radius = 5
 var current_load_radius = 0
 
-func _ready():
-	thread = Thread.new()
-	mutex = Mutex.new()
-	semaphore = Semaphore.new()
-	
+func _ready():	
 	thread.start(self, "_thread_gen")
 	height_noise.period = 100
 
+
 func _thread_gen(userdata):
+	var i = 0
 	# Center map generation on the player
-	while(true):
+	while(!bKill_thread):
 		# Check if player in new chunk
 		var player_pos_updated = false
-
 		player_pos_updated = _new_chunk_pos != _chunk_pos
+		
 		# Make sure we aren't making a shallow copy
 		_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
 		var current_chunk_pos = Vector2(_new_chunk_pos.x, _new_chunk_pos.y)
-		if kill_thread:
-			return
-		
+		i = i + 1
 		if player_pos_updated:
-			# If new chunk unload unneeded chunks
-			for v in _loaded_chunks.keys():
-				if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
-					_chunks_to_unload.append(Vector2(v.x, v.y))
+			# If new chunk unload unneeded chunks (changed to be entirely done off main thread if I understand correctly, fixling some stuttering I was feeling
+			enforce_render_distance(current_chunk_pos)
 			# Make sure player chunk is loaded
 			_last_chunk = _load_chunk(current_chunk_pos.x, current_chunk_pos.y)
 			current_load_radius = 1
-		
-		# Unload old chunks
-		if _chunks_to_unload.size() > 0:
-			var v = _chunks_to_unload[0]
-			_unload_chunk(v.x, v.y)
-			_chunks_to_unload.erase(v)
 		else:
 			# Load next chunk based on the position of the last one
 			var delta_pos = _last_chunk - current_chunk_pos
@@ -104,8 +94,10 @@ func _load_chunk(cx, cz):
 		var c = Chunk.new()
 		c.generate(self, cx, cz)
 		c.update()
-		call_deferred("add_child", c)
+		add_child(c)
+		chunk_mutex.lock()
 		_loaded_chunks[c_pos] = c
+		chunk_mutex.unlock()
 	return c_pos
 
 func _update_chunk(cx, cz):
@@ -114,14 +106,29 @@ func _update_chunk(cx, cz):
 		var c = _loaded_chunks[c_pos]
 		c.update()
 	return c_pos
+	
+# Detects and removes chunks all in one go without consulting the main thread.
+func enforce_render_distance(current_chunk_pos):
+		#Checks and deletes the offending chunks all in one go 
+	for v in _loaded_chunks.keys():
+		# Anywhere you directly interface with chunks outside of unloading
+		if abs(v.x - current_chunk_pos.x) > load_radius or abs(v.y - current_chunk_pos.y) > load_radius:
+			chunk_mutex.lock()
+			_loaded_chunks[v].free()
+			_loaded_chunks.erase(v)
+			chunk_mutex.unlock()
+
 
 func _unload_chunk(cx, cz):
 	var c_pos = Vector2(cx, cz)
 	if _loaded_chunks.has(c_pos):
-		_loaded_chunks[c_pos].call_deferred("queue_free")
+		chunk_mutex.lock()
+		_loaded_chunks[c_pos].free()
 		_loaded_chunks.erase(c_pos)
+		chunk_mutex.unlock()
+		# Leaving this here because it is funny as hell
 		# Force it to just fucking chill after holy shit
-		OS.delay_msec(50)
+		# OS.delay_msec(50)
 
 func kill_thread():
-	kill_thread = true
+	bKill_thread = true

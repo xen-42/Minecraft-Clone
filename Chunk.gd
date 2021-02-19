@@ -1,6 +1,6 @@
 extends StaticBody
 
-const DIMENSION = Vector3(20,50,20)
+const DIMENSION = Vector3(16,50,16)
 
 var mat = preload("res://assets/TextureAtlasMaterial.tres")
 var rng = RandomNumberGenerator.new()
