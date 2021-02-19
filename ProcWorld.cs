@@ -117,7 +117,7 @@ public class ProcWorld : Spatial
 	public void change_block(int cx, int cz, int bx, int by, int bz, string t)
 	{
 		try
-        {
+		{
 			var c = _loaded_chunks[new Vector2(cx, cz)];
 			if (c._block_data[bx, by, bz].type != t)
 			{
@@ -127,9 +127,9 @@ public class ProcWorld : Spatial
 			}
 		}
 		catch
-        {
+		{
 
-        }
+		}
 	}
 
 	Vector2 _update_chunk(int cx, int cz)

@@ -77,7 +77,7 @@ public class Chunk_cs : StaticBody
 	public BlockData[,,] _block_data = new BlockData[(int)DIMENSION.x, (int)DIMENSION.y, (int)DIMENSION.z];
 
 	SurfaceTool st = new SurfaceTool();
-	SurfaceTool collisionmesh = new SurfaceTool();
+	SurfaceTool collisionmesh_st = new SurfaceTool();
 
 	public void Generate(ProcWorld w, float cx, float cz)
 	{
@@ -129,10 +129,12 @@ public class Chunk_cs : StaticBody
 	public void Update()
 	{
 		ArrayMesh mesh = new ArrayMesh();
+		ArrayMesh collisionmesh_ar = new ArrayMesh();
+		MeshInstance collisionmesh_ins = new MeshInstance();
 		MeshInstance mesh_instance = new MeshInstance();
 
 		st.Begin(Mesh.PrimitiveType.Triangles);
-		collisionmesh.Begin(Mesh.PrimitiveType.Triangles);
+		collisionmesh_st.Begin(Mesh.PrimitiveType.Triangles);
 
 		//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
 		for (int x = 0; x < DIMENSION.x; x++)
@@ -148,11 +150,11 @@ public class Chunk_cs : StaticBody
 						if(check.Contains(true))
 						{
 							if(BlockData.block_types[blocktype].TagsList.Contains(Tags.No_Collision))
-                            {
+							{
 								_create_block(check, x, y, z, true);
 							}
 							else
-                            {
+							{
 								_create_block(check, x, y, z, false);
 							}
 						}
@@ -163,10 +165,13 @@ public class Chunk_cs : StaticBody
 		st.GenerateNormals(false);
 		st.SetMaterial(mat);
 		st.Commit(mesh);
-		collisionmesh.Commit(new ArrayMesh());
-		collisionmesh.GenerateNormals(false);
-		collisionmesh.
 		mesh_instance.Mesh = mesh;
+
+		collisionmesh_st.GenerateNormals(false);
+		collisionmesh_st.Commit(collisionmesh_ar);
+		collisionmesh_ins.Mesh = collisionmesh_ar;
+		collisionmesh_ins.Visible = false;
+
 		foreach(Node child in GetChildren())
 		{
 			if(child.GetClass() == mesh_instance.GetClass())
@@ -175,6 +180,8 @@ public class Chunk_cs : StaticBody
 			}
 		}
 		AddChild(mesh_instance);
+		AddChild(collisionmesh_ins);
+		collisionmesh_ins.CreateTrimeshCollision();
 	}
 
 	bool[] check_transparent_neighbours(int x, int y, int z)
@@ -253,9 +260,9 @@ public class Chunk_cs : StaticBody
 		st.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
 
 		if(!NoCollision)
-        {
-			collisionmesh.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
-			collisionmesh.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
+		{
+			collisionmesh_st.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
+			collisionmesh_st.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
 		}
 
 
