@@ -118,7 +118,7 @@ public class ProcWorld : Spatial
 	{
 <<<<<<< HEAD
 		try
-		{
+        {
 			var c = _loaded_chunks[new Vector2(cx, cz)];
 			if (c._block_data[bx, by, bz].type != t)
 			{
@@ -128,8 +128,9 @@ public class ProcWorld : Spatial
 			}
 		}
 		catch
-		{
+        {
 
+<<<<<<< HEAD
 		}
 =======
 		var c = _loaded_chunks[new Vector2(cx, cz)];
@@ -140,6 +141,9 @@ public class ProcWorld : Spatial
 			c.Update();
 		}
 >>>>>>> parent of 08986a2 (The various classes)
+=======
+        }
+>>>>>>> parent of ec5d647 (Making the nocollision tag work)
 	}
 
 	Vector2 _update_chunk(int cx, int cz)

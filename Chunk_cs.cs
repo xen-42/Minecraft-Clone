@@ -78,9 +78,13 @@ public class Chunk_cs : StaticBody
 
 	SurfaceTool st = new SurfaceTool();
 <<<<<<< HEAD
+<<<<<<< HEAD
 	SurfaceTool collisionmesh_st = new SurfaceTool();
 =======
 >>>>>>> parent of 08986a2 (The various classes)
+=======
+	SurfaceTool collisionmesh = new SurfaceTool();
+>>>>>>> parent of ec5d647 (Making the nocollision tag work)
 
 	public void Generate(ProcWorld w, float cx, float cz)
 	{
@@ -132,15 +136,17 @@ public class Chunk_cs : StaticBody
 	public void Update()
 	{
 		ArrayMesh mesh = new ArrayMesh();
-		ArrayMesh collisionmesh_ar = new ArrayMesh();
-		MeshInstance collisionmesh_ins = new MeshInstance();
 		MeshInstance mesh_instance = new MeshInstance();
 
 		st.Begin(Mesh.PrimitiveType.Triangles);
 <<<<<<< HEAD
+<<<<<<< HEAD
 		collisionmesh_st.Begin(Mesh.PrimitiveType.Triangles);
 =======
 >>>>>>> parent of 08986a2 (The various classes)
+=======
+		collisionmesh.Begin(Mesh.PrimitiveType.Triangles);
+>>>>>>> parent of ec5d647 (Making the nocollision tag work)
 
 		//Making use of multidimensional arrays allocated on creation, should speed up this process significantly
 		for (int x = 0; x < DIMENSION.x; x++)
@@ -156,11 +162,11 @@ public class Chunk_cs : StaticBody
 						{
 <<<<<<< HEAD
 							if(BlockData.block_types[blocktype].TagsList.Contains(Tags.No_Collision))
-							{
+                            {
 								_create_block(check, x, y, z, true);
 							}
 							else
-							{
+                            {
 								_create_block(check, x, y, z, false);
 							}
 =======
@@ -174,13 +180,10 @@ public class Chunk_cs : StaticBody
 		st.GenerateNormals(false);
 		st.SetMaterial(mat);
 		st.Commit(mesh);
+		collisionmesh.Commit(new ArrayMesh());
+		collisionmesh.GenerateNormals(false);
+		collisionmesh.
 		mesh_instance.Mesh = mesh;
-
-		collisionmesh_st.GenerateNormals(false);
-		collisionmesh_st.Commit(collisionmesh_ar);
-		collisionmesh_ins.Mesh = collisionmesh_ar;
-		collisionmesh_ins.Visible = false;
-
 		foreach(Node child in GetChildren())
 		{
 			if(child.GetClass() == mesh_instance.GetClass())
@@ -190,11 +193,14 @@ public class Chunk_cs : StaticBody
 		}
 		AddChild(mesh_instance);
 <<<<<<< HEAD
+<<<<<<< HEAD
 		AddChild(collisionmesh_ins);
 		collisionmesh_ins.CreateTrimeshCollision();
 =======
 		mesh_instance.CreateTrimeshCollision();
 >>>>>>> parent of 08986a2 (The various classes)
+=======
+>>>>>>> parent of ec5d647 (Making the nocollision tag work)
 	}
 
 	bool[] check_transparent_neighbours(int x, int y, int z)
@@ -274,9 +280,9 @@ public class Chunk_cs : StaticBody
 <<<<<<< HEAD
 
 		if(!NoCollision)
-		{
-			collisionmesh_st.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
-			collisionmesh_st.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
+        {
+			collisionmesh.AddTriangleFan(new Vector3[] { a, b, c }, new Vector2[] { uv_a, uv_b, uv_c });
+			collisionmesh.AddTriangleFan(new Vector3[] { a, c, d }, new Vector2[] { uv_a, uv_c, uv_d });
 		}
 
 
