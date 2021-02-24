@@ -4,7 +4,7 @@ const DIMENSION = Vector3(16,50,16)
 
 # Ensures terrain gen does not elongate based on chunk size/resolution so terrain at a chunk 30 blocks tall still looks the same as a 50 block tall chunk
 # It ensures structures and trees have the ability to grow should 
-const Gen_Height = 30
+const Gen_Height = 50
 
 # Moves terrain height up and down chunk 
 # NOTE: this is applied after the gen height calculation, that means it will affect the final output of Gen_Height
