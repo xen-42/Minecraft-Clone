@@ -1,6 +1,6 @@
 extends StaticBody
 
-const DIMENSION = Vector3(20,50,20)
+const DIMENSION = Vector3(16,50,16)
 
 var mat = preload("res://assets/TextureAtlasMaterial.tres")
 var rng = RandomNumberGenerator.new()
@@ -52,6 +52,9 @@ var _block_data = []
 
 var st = SurfaceTool.new()
 
+# Used for collision
+var cst = SurfaceTool.new()
+
 func _ready():
 	mat.albedo_texture.set_flags(2)
 
@@ -92,9 +95,17 @@ func generate(w, cx, cz):
 
 func update():
 	var mesh = Mesh.new()
+	
+	# Collision mesh
+	var cmesh = Mesh.new()
+	
 	var mesh_instance = MeshInstance.new()
 	
+	# Collision Mesh instance
+	var cmesh_instance = MeshInstance.new()
+	
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	cst.begin(Mesh.PRIMITIVE_TRIANGLES)
 	blocks.resize(DIMENSION.x)
 	for x in DIMENSION.x:
 		blocks[x] = []
@@ -104,45 +115,56 @@ func update():
 			blocks[x][y].resize(DIMENSION.z)
 			for z in DIMENSION.z:
 				# Now we create blocks
-				if not _block_data[x][y][z].type == "Air":
+				var block_type = _block_data[x][y][z].type
+				if block_type != "Air":
 					# Check if its visible bc of its neighbours
 					var check = check_transparent_neighbours(x, y, z)
 					if check.has(true):
-						_create_block(check, x, y, z)
+						var no_collision = false
+						if(block_types[block_type].has(Tags.No_Collision)):
+							no_collision = true
+						_create_block(check, x, y, z, no_collision)
 	st.generate_normals(false)
 	st.set_material(mat)
 	st.commit(mesh)
 	mesh_instance.set_mesh(mesh)
+	
+	cst.generate_normals(false)
+	cst.commit(cmesh)
+	cmesh_instance.set_mesh(cmesh)
+	# This is for collision only and so we do not need to see it (it causes issues with transparent blocks)
+	cmesh_instance.visible = false
 	
 	# If it already has a mesh instance child, remove it
 	for child in get_children():
 		if child is MeshInstance:
 			child.queue_free()
 	add_child(mesh_instance)
-	mesh_instance.create_trimesh_collision()
+	add_child(cmesh_instance)
+	cmesh_instance.create_trimesh_collision()
 
-func _create_block(check, x, y, z):
+func _create_block(check, x, y, z, no_collision):
 	var block = _block_data[x][y][z].type
 	if block_types[block]["Tags"].has(Tags.Flat):
-		create_face(CROSS_1, x, y, z, block_types[block][Side.only])
-		create_face(CROSS_2, x, y, z, block_types[block][Side.only])
-		create_face(CROSS_3, x, y, z, block_types[block][Side.only])
-		create_face(CROSS_4, x, y, z, block_types[block][Side.only])
+		create_face(CROSS_1, x, y, z, block_types[block][Side.only], no_collision)
+		create_face(CROSS_2, x, y, z, block_types[block][Side.only], no_collision)
+		create_face(CROSS_3, x, y, z, block_types[block][Side.only], no_collision)
+		create_face(CROSS_4, x, y, z, block_types[block][Side.only], no_collision)
 	else:
 		if check[0]:
-			create_face(TOP, x, y, z, block_types[block][Side.top])
+			create_face(TOP, x, y, z, block_types[block][Side.top], no_collision)
 		if check[1]:
-			create_face(BOTTOM, x, y, z, block_types[block][Side.bottom])
+			create_face(BOTTOM, x, y, z, block_types[block][Side.bottom], no_collision)
 		if check[2]:
-			create_face(LEFT, x, y, z, block_types[block][Side.left])
+			create_face(LEFT, x, y, z, block_types[block][Side.left], no_collision)
 		if check[3]:
-			create_face(RIGHT, x, y, z, block_types[block][Side.right])
+			create_face(RIGHT, x, y, z, block_types[block][Side.right], no_collision)
 		if check[4]:
-			create_face(BACK, x, y, z, block_types[block][Side.back])
+			create_face(BACK, x, y, z, block_types[block][Side.back], no_collision)
 		if check[5]:
-			create_face(FRONT, x, y, z, block_types[block][Side.front])
+			create_face(FRONT, x, y, z, block_types[block][Side.front], no_collision)
 
-func create_face(i, x, y, z, texture_atlas_offset):
+func create_face(i, x, y, z, texture_atlas_offset, no_collision):
 	# Two triangles
 	var offset = Vector3(x, y, z)
 	var a = v[i[0]] + offset
@@ -163,6 +185,11 @@ func create_face(i, x, y, z, texture_atlas_offset):
 	# Add UVs and tris
 	st.add_triangle_fan(([a, b, c]), ([uv_a, uv_b, uv_c]))
 	st.add_triangle_fan(([a, c, d]), ([uv_a, uv_c, uv_d]))
+	
+	if no_collision:
+		cst.add_triangle_fan(([a, b, c]), ([uv_a, uv_b, uv_c]))
+		cst.add_triangle_fan(([a, c, d]), ([uv_a, uv_c, uv_d]))
+	
 
 func check_transparent_neighbours(x, y, z):
 	var has_top = is_block_transparent(x, y + 1, z)
