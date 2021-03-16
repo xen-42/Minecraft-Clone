@@ -138,18 +138,23 @@ func update():
 	mesh_instance.set_mesh(mesh)
 	
 	cst.generate_normals(false)
+	cst.set_material(mat)
 	cst.commit(cmesh)
 	cmesh_instance.set_mesh(cmesh)
-	# This is for collision only and so we do not need to see it (it causes issues with transparent blocks)
-	cmesh_instance.visible = false
+	
+	# Create Collison
+	mesh_instance.create_trimesh_collision()
 	
 	# If it already has a mesh instance child, remove it
 	for child in get_children():
 		if child is MeshInstance:
 			child.queue_free()
-	add_child(mesh_instance)
-	add_child(cmesh_instance)
-	cmesh_instance.create_trimesh_collision()
+			
+	call_deferred("add_child", mesh_instance)
+	call_deferred("add_child",cmesh_instance)
+
+	cst.clear()
+	st.clear()
 
 func _create_block(check, x, y, z, no_collision):
 	var block = _block_data[x][y][z].type
@@ -190,13 +195,13 @@ func create_face(i, x, y, z, texture_atlas_offset, no_collision):
 	var uv_c = Vector2(1.0/texture_atlas_size.x, 1.0/texture_atlas_size.y) + uv_offset
 	var uv_d = Vector2(1.0/texture_atlas_size.x, 0) + uv_offset
 	
-	# Add UVs and tris
-	st.add_triangle_fan(([a, b, c]), ([uv_a, uv_b, uv_c]))
-	st.add_triangle_fan(([a, c, d]), ([uv_a, uv_c, uv_d]))
-	
-	if no_collision:
+	if no_collision == false:
 		cst.add_triangle_fan(([a, b, c]), ([uv_a, uv_b, uv_c]))
 		cst.add_triangle_fan(([a, c, d]), ([uv_a, uv_c, uv_d]))
+	else:
+		# Add UVs and tris
+		st.add_triangle_fan(([a, b, c]), ([uv_a, uv_b, uv_c]))
+		st.add_triangle_fan(([a, c, d]), ([uv_a, uv_c, uv_d]))
 	
 
 func check_transparent_neighbours(x, y, z):
