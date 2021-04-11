@@ -22,7 +22,7 @@ _global_script_class_icons={
 
 config/name="Minecraft Clone"
 run/main_scene="res://Spatial.tscn"
-config/icon="res://icon.png"
+config/icon="res://Resources/icon.png"
 
 [importer_defaults]
 
@@ -100,6 +100,11 @@ scroll_down={
  ]
 }
 
-[rendering]
+[layer_names]
 
-environment/default_environment="res://default_env.tres"
+3d_physics/layer_4="Blocks"
+3d_physics/Blocks=false
+
+[mono]
+
+profiler/enabled=true
